@@ -1,0 +1,982 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haikal's iPhone — Interactive AU</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif}
+body{min-height:100vh;background:#090909;color:white;font-family:var(--font);display:flex;justify-content:center;align-items:center;padding:12px}
+.stage{width:100%;display:flex;justify-content:center;align-items:center}
+.phone{width:344px;height:min(720px,calc(100dvh - 24px));min-height:500px;position:relative;border-radius:53px;padding:9px;background:linear-gradient(135deg,#292929,#050505,#343434);border:2px solid #383838;box-shadow:0 0 0 2px #111,0 25px 80px #000b;overflow:hidden}
+.screen{position:relative;width:100%;height:100%;border-radius:43px;overflow:hidden;background:#111;isolation:isolate}
+.wallpaper{position:absolute;inset:0;z-index:-2;background:url("images/lockscreen.jpg") center/cover no-repeat}
+.wallpaper:after{content:"";position:absolute;inset:0;background:linear-gradient(#0005,transparent 40%,#0008)}
+.status{position:absolute;z-index:30;top:17px;left:22px;right:22px;display:flex;justify-content:space-between;height:20px;font-size:12px;font-weight:650}
+.dynamic-island{position:absolute;z-index:31;width:94px;height:27px;border-radius:20px;background:#000;top:10px;left:50%;transform:translateX(-50%)}
+.home-indicator{position:absolute;z-index:50;bottom:0;left:50%;transform:translateX(-50%);width:125px;height:25px;border:0;border-radius:18px 18px 0 0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.home-indicator:after{content:"";display:block;width:95px;height:4px;border-radius:10px;background:white}
+.home-indicator.dark:after{background:#111}
+.view{position:absolute;inset:0;overflow:hidden;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(10px) scale(.99);transition:opacity .25s,transform .3s,visibility 0s linear .3s;z-index:1}
+.view.active{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:0s;z-index:2}
+.lock-content{position:absolute;inset:0;text-align:center;cursor:pointer}
+.date{position:absolute;top:71px;width:100%;font-size:15px;font-weight:600}
+.clock{position:absolute;top:88px;width:100%;font-size:78px;line-height:1.15;letter-spacing:-4px;font-weight:600}
+.notifications{position:absolute;bottom:91px;left:7px;right:7px;display:grid;gap:7px;text-align:left}
+.notification{display:flex;align-items:center;gap:9px;min-height:48px;padding:8px 10px;border:1px solid #ffffff65;border-radius:18px;color:#24242a;background:#f7f7f2e8;backdrop-filter:blur(22px);font-size:11px;cursor:pointer}
+.notif-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.notif-text{flex:1;min-width:0}
+.notif-title{font-size:12px;font-weight:700;margin-bottom:3px}
+.notif-message{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notif-time{align-self:flex-start;color:#777;font-size:10px}
+.lock-bottom{position:absolute;bottom:28px;width:100%;display:flex;flex-direction:column;align-items:center;gap:11px}
+.swipe-text{font-size:12px;color:#ffffffbd}
+.lock-actions{width:100%;display:flex;justify-content:space-between;padding:0 25px}
+.round-action{width:42px;height:42px;display:grid;place-items:center;background:#ffffff25;border:1px solid #ffffff42;border-radius:50%;font-size:20px;color:white;cursor:pointer}
+.pin-screen{background:#191416}
+.pin-wallpaper{position:absolute;inset:-15px;background:url("images/lockscreen.jpg") center/cover;filter:blur(24px) brightness(.35);transform:scale(1.1)}
+.pin-content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding-top:98px}
+.pin-heading{font-size:16px;font-weight:600;margin-bottom:18px}
+.pin-dots{display:flex;gap:17px;margin-bottom:31px}
+.pin-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid white}
+.pin-dot.filled{background:white}
+.keypad{display:grid;grid-template-columns:repeat(3,64px);justify-content:center;gap:12px 20px}
+.key{width:64px;height:64px;border-radius:50%;border:1px solid #ffffff3b;background:#ffffff22;color:white;font-size:31px;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer}
+.key small{font-size:8px;font-weight:700;letter-spacing:1px}
+.pin-error{height:20px;margin-top:10px;font-size:12px;color:#ffb5b5}
+.pin-footer{position:absolute;bottom:35px;left:27px;right:27px;display:flex;justify-content:space-between;font-size:12px}
+.pin-footer button{background:none;border:0;color:white;cursor:pointer;font:inherit}
+.home-content{position:absolute;inset:54px 14px 25px;display:flex;flex-direction:column}
+.widgets{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:19px}
+.widget{height:116px;padding:14px;border-radius:21px;background:#f5f5f5;color:#111;overflow:hidden}
+.widget-day{color:#f24d4d;font-size:10px;font-weight:700}
+.widget-date{font-size:34px;margin-top:1px}
+.widget-event{font-size:10px;margin-top:3px;font-weight:600}
+.weather-widget{background:linear-gradient(140deg,#53799f,#263c60);color:white}
+.weather-city{font-size:11px;font-weight:600}
+.weather-temp{font-size:34px;font-weight:300;margin-top:5px}
+.weather-desc{font-size:10px;margin-top:4px}
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:19px 7px}
+.app{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;color:white;font:inherit;cursor:pointer;min-width:0}
+.app-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#f7f7f7,#d9d9d9);font-size:28px;box-shadow:0 2px 5px #0002;position:relative}
+.app-label{font-size:10px;text-shadow:0 1px 3px #000}
+.app-icon.blue{background:linear-gradient(140deg,#63d0ff,#0874e8)}
+.app-icon.green{background:linear-gradient(140deg,#58df91,#078e55)}
+.app-icon.yellow{background:linear-gradient(140deg,#ffe88d,#e8b53b)}
+.app-icon.black{background:#080808}
+.app-icon.pink{background:linear-gradient(140deg,#f96da9,#7b32dc)}
+.app-icon.gray{background:linear-gradient(140deg,#c7cbd0,#666b75)}
+.app-icon.red{background:linear-gradient(140deg,#ff7186,#d51b47)}
+.badge-count{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:12px;background:#ff3b30;color:white;font-size:11px;display:grid;place-items:center}
+.search-pill{align-self:center;margin-top:auto;margin-bottom:12px;border-radius:20px;padding:6px 13px;background:#333a;border:1px solid #ffffff35;color:white;font-size:10px}
+.dock{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:10px 9px;border:1px solid #ffffff40;border-radius:26px;background:#eeeeee38;backdrop-filter:blur(25px)}
+.dock .app-icon{width:43px;height:43px;border-radius:13px}
+.whatsapp{background:#f8f7f2;color:#15191a}
+.wa-header{position:absolute;top:0;width:100%;height:112px;background:#fafafaf7;padding:45px 14px 9px;z-index:2}
+.wa-topline{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.wa-top-actions{display:flex;gap:12px}
+.wa-circle{width:36px;height:36px;border:none;border-radius:50%;background:#f1f1f1;color:#202526;font-size:20px;cursor:pointer}
+.wa-title{font-size:25px;letter-spacing:-.8px;font-weight:750}
+.wa-body{position:absolute;inset:112px 0 62px;overflow-y:auto;scrollbar-width:none}
+.wa-search{margin:7px 12px 13px;padding:10px 12px;background:#f0f0f0;border-radius:22px;color:#8c8d8d;font-size:12px;display:flex;gap:7px}
+.wa-filter{display:flex;gap:6px;padding:0 12px 10px;overflow-x:auto}
+.filter{border:1px solid #e7e7e7;background:white;padding:8px 12px;border-radius:18px;font-size:11px;color:#696969;cursor:pointer;white-space:nowrap}
+.filter.active{background:#d8f5e5;color:#18734d;border-color:#d8f5e5}
+.contact{display:flex;align-items:center;gap:10px;padding:10px 12px;background:transparent;border:0;width:100%;text-align:left;cursor:pointer;color:#202526;font-family:inherit}
+.contact:active{background:#e9e9e9}
+.avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;object-fit:cover;background:#ddd}
+.contact-main{flex:1;min-width:0;border-bottom:1px solid #e6e6e6;padding:2px 0 12px}
+.contact-line{display:flex;justify-content:space-between;gap:5px;align-items:center}
+.contact-name{font-size:13px;font-weight:650}
+.contact-time{font-size:9px;color:#8c9090;white-space:nowrap}
+.contact-preview{font-size:11px;color:#898b8b;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wa-tabs{position:absolute;bottom:16px;left:9px;right:9px;height:49px;border-radius:28px;display:flex;justify-content:space-around;align-items:center;background:#fffffff0;border:1px solid #ededed;z-index:3}
+.wa-tab{background:transparent;border:0;color:#747a78;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.wa-tab span:first-child{font-size:18px}
+.wa-tab.selected{color:#087e5b;font-weight:700}
+.chat-screen{background:#eeeae2;color:#1b1b1b}
+.chat-header{position:absolute;z-index:3;top:0;left:0;right:0;height:86px;padding:39px 10px 8px;display:flex;align-items:center;gap:7px;background:#f8f8f5}
+.chat-back{border:none;background:none;font-size:26px;color:#242424;cursor:pointer;padding:0 3px}
+.chat-header .avatar{width:34px;height:34px}
+.chat-contact{flex:1;min-width:0}
+.chat-name{font-size:13px;font-weight:700}
+.chat-status{font-size:10px;color:#7b7b7b;margin-top:3px}
+.chat-call{border:none;background:white;border-radius:50%;width:37px;height:37px;font-size:17px;cursor:pointer}
+.chat-wall{position:absolute;inset:86px 0 66px;overflow-y:auto;padding:12px 9px;background-color:#f1eee6;background-image:radial-gradient(circle at 20% 30%,#ffffff8a 0 2px,transparent 3px),radial-gradient(circle at 80% 60%,#d8d2c4 0 2px,transparent 3px);display:flex;flex-direction:column;gap:7px;scrollbar-width:none;transition:bottom .2s}
+.day-divider{align-self:center;background:#ffffffc9;border-radius:10px;padding:4px 10px;font-size:10px;color:#777;margin:5px 0}
+.message{max-width:83%;padding:9px 10px 5px;border-radius:15px;font-size:12px;line-height:1.42;overflow-wrap:anywhere;white-space:pre-wrap;animation:pop .16s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.message.incoming{align-self:flex-start;background:#fff;border-top-left-radius:5px}
+.message.outgoing{align-self:flex-end;background:#d7f8c6;border-top-right-radius:5px}
+.message-time{text-align:right;font-size:9px;color:#858585;margin-top:4px}
+.message-photo{width:190px;max-width:100%;height:155px;object-fit:cover;border-radius:8px;display:block;margin:0 0 5px}
+.chat-composer{position:absolute;z-index:8;bottom:12px;left:8px;right:8px;display:flex;gap:5px;align-items:center;height:44px;transition:bottom .2s}
+.composer-plus{border:none;background:#fff;width:31px;height:31px;border-radius:50%;font-size:22px;color:#777;flex-shrink:0}
+.composer-input{flex:1;min-width:0;border:1px solid #e8e8e8;border-radius:24px;background:#fff;height:39px;padding:0 14px;outline:none;font-size:12px;font-family:inherit;color:#222}
+.send-button{width:35px;height:35px;border:none;border-radius:50%;background:#078d62;color:white;cursor:pointer;font-size:17px;flex-shrink:0}
+.iphone-keyboard{position:absolute;z-index:6;bottom:0;left:0;right:0;height:236px;background:#d1d5dd;padding:7px 4px 27px;display:none;flex-direction:column;gap:9px;border-top:1px solid #c4c8cf}
+.keyboard-suggestions{height:24px;display:grid;grid-template-columns:repeat(3,1fr);align-items:center;text-align:center;color:#383b41;font-size:12px}
+.keyboard-suggestions span+span{border-left:1px solid #aeb3bc}
+.keyboard-row{display:flex;justify-content:center;gap:4px;height:39px}
+.keyboard-key{flex:1;min-width:0;border:0;border-radius:5px;background:#fff;color:#25272a;font-family:inherit;font-size:18px;box-shadow:0 1px 0 #a3a8b1;cursor:pointer;display:grid;place-items:center}
+.keyboard-row.row-two{padding:0 13px}
+.keyboard-key.special{background:#aeb6c3;font-size:14px;flex:1.45}
+.keyboard-bottom{display:flex;gap:4px;height:39px}
+.keyboard-bottom .keyboard-key{font-size:14px}
+.keyboard-bottom .space-key{flex:4}
+.keyboard-bottom .return-key{flex:1.5;background:#078d62;color:white}
+.keyboard-home-line{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);height:4px;width:100px;background:#25272a;border-radius:8px}
+.chat-screen.keyboard-open .chat-wall{bottom:245px}
+.chat-screen.keyboard-open .chat-composer{bottom:244px}
+.chat-screen.keyboard-open .iphone-keyboard{display:flex}
+.chat-screen.keyboard-open .home-indicator{display:none}
+.typing-indicator{align-self:flex-start;background:white;border-radius:13px;padding:8px 12px;color:#858585;font-size:11px}
+.tap-hint{position:absolute;bottom:63px;left:50%;transform:translateX(-50%);z-index:5;background:#333b;color:#fff;padding:6px 11px;border-radius:15px;font-size:10px;white-space:nowrap;pointer-events:auto;cursor:pointer}
+.chat-screen.keyboard-open .tap-hint{display:none}
+@media(max-width:400px){body{padding:4px}.phone{width:min(344px,calc(100vw - 12px));height:min(720px,calc(100dvh - 12px));min-height:480px}}
+@media(max-height:600px){body{padding:3px}.phone{height:calc(100dvh - 6px);min-height:0}.pin-content{padding-top:55px}.keypad{gap:6px 15px;grid-template-columns:repeat(3,50px)}.key{width:50px;height:50px}.pin-dots{margin-bottom:14px}.clock{top:75px;font-size:65px}.date{top:60px}.notifications{bottom:70px}.iphone-keyboard{height:215px;gap:5px}.keyboard-row{height:34px}.chat-screen.keyboard-open .chat-wall{bottom:222px}.chat-screen.keyboard-open .chat-composer{bottom:220px}}
+</style>
+</head>
+<body>
+<div class="stage"><div class="phone"><div class="screen">
+<div class="wallpaper"></div><div class="dynamic-island"></div>
+<div class="status"><span id="statusTime">22:00</span><span>▮▮ ▴ ▰</span></div>
+
+<section class="view active" id="lockView">
+<div class="lock-content" id="lockTap">
+<div class="date" id="dateText">Tuesday, October 27</div>
+<div class="clock" id="clockText">22:00</div>
+<div class="notifications" id="lockNotifications"></div>
+<div class="lock-bottom">
+<div class="lock-actions"><button class="round-action" id="flashBtn">♜</button><button class="round-action" id="cameraBtn">◎</button></div>
+<div class="swipe-text">Swipe up to open</div>
+</div>
+</div>
+</section>
+
+<section class="view pin-screen" id="pinView">
+<div class="pin-wallpaper"></div><div class="pin-content">
+<div class="pin-heading">Enter Passcode</div>
+<div class="pin-dots" id="pinDots"><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span></div>
+<div class="keypad">
+<button class="key" data-digit="1">1</button><button class="key" data-digit="2">2<small>ABC</small></button><button class="key" data-digit="3">3<small>DEF</small></button>
+<button class="key" data-digit="4">4<small>GHI</small></button><button class="key" data-digit="5">5<small>JKL</small></button><button class="key" data-digit="6">6<small>MNO</small></button>
+<button class="key" data-digit="7">7<small>PQRS</small></button><button class="key" data-digit="8">8<small>TUV</small></button><button class="key" data-digit="9">9<small>WXYZ</small></button>
+<div></div><button class="key" data-digit="0">0</button><div></div>
+</div><div class="pin-error" id="pinError"></div><div class="pin-footer"><button id="emergencyBtn">Emergency</button><button id="deletePin">Delete</button></div>
+</div>
+</section>
+
+<section class="view" id="homeView">
+<div class="home-content">
+<div class="widgets">
+<div class="widget"><div class="widget-day" id="widgetDay">Tuesday</div><div class="widget-date" id="widgetDate">27</div><div class="widget-event">▏nongkrong<br><span style="color:#888;font-weight:400">Tonight</span></div></div>
+<div class="widget weather-widget"><div class="weather-city">Bandung ↗ ☁</div><div class="weather-temp">24°</div><div class="weather-desc">Cloudy<br>H:28° L:20°</div></div>
+</div>
+<div class="app-grid">
+<button class="app" data-app="Mail"><span class="app-icon blue">✉</span><span class="app-label">Mail</span></button>
+<button class="app" data-app="Weather"><span class="app-icon blue">🌤</span><span class="app-label">Weather</span></button>
+<button class="app" data-app="Notes"><span class="app-icon yellow">📝</span><span class="app-label">Notes</span></button>
+<button class="app" data-app="Maps"><span class="app-icon">🗺️</span><span class="app-label">Maps</span></button>
+<button class="app" data-app="X"><span class="app-icon black">𝕏</span><span class="app-label">X</span></button>
+<button class="app" data-app="Settings"><span class="app-icon gray">⚙</span><span class="app-label">Settings</span></button>
+<button class="app" data-app="Camera"><span class="app-icon gray">📷</span><span class="app-label">Camera</span></button>
+<button class="app" data-app="Clock"><span class="app-icon">🕒</span><span class="app-label">Clock</span></button>
+<button class="app" data-app="Journal"><span class="app-icon green">▤</span><span class="app-label">Journal</span></button>
+<button class="app" data-app="Instagram"><span class="app-icon pink">◎</span><span class="app-label">Instagram</span></button>
+<button class="app" data-app="Photos"><span class="app-icon">🌼</span><span class="app-label">Photos</span></button>
+<button class="app" data-app="Calendar"><span class="app-icon">📅</span><span class="app-label">Calendar</span></button>
+</div>
+<button class="search-pill" id="searchBtn">⌕ Search</button>
+<div class="dock">
+<button class="app" data-app="Phone"><span class="app-icon green">☎</span></button>
+<button class="app" data-app="Safari"><span class="app-icon">🧭</span></button>
+<button class="app" data-app="WhatsApp"><span class="app-icon green">☎<span class="badge-count" id="waBadge">0</span></span></button>
+<button class="app" data-app="Music"><span class="app-icon red">♫</span></button>
+</div>
+</div>
+</section>
+
+<section class="view whatsapp" id="waView">
+<div class="wa-header"><div class="wa-topline"><button class="wa-circle" id="waMenu">•••</button><div class="wa-top-actions"><button class="wa-circle" id="waCamera">◎</button><button class="wa-circle" id="newChat">＋</button></div></div><div class="wa-title">Chats</div></div>
+<div class="wa-body">
+<div class="wa-search">⌕ <input id="searchContacts" placeholder="Search" style="border:0;outline:0;background:transparent;width:100%;font:inherit"></div>
+<div class="wa-filter"><button class="filter active" data-filter="All">All</button><button class="filter" data-filter="Unread">Unread</button><button class="filter" data-filter="Favorites">Favorites</button><button class="filter" data-filter="Groups">Groups</button></div>
+<div id="contactList"></div>
+</div>
+<div class="wa-tabs"><button class="wa-tab"><span>◉</span><span>Updates</span></button><button class="wa-tab"><span>☎</span><span>Calls</span></button><button class="wa-tab"><span>♧</span><span>Communities</span></button><button class="wa-tab selected"><span>▢</span><span>Chats</span></button><button class="wa-tab"><span>◉</span><span>You</span></button></div>
+</section>
+
+<section class="view chat-screen" id="chatView">
+<div class="chat-header"><button class="chat-back" id="backToChats">‹</button><img class="avatar" id="chatAvatar" src="" alt=""><div class="chat-contact"><div class="chat-name" id="chatName">naaa</div><div class="chat-status" id="chatStatus">online</div></div><button class="chat-call" id="callBtn">♧</button></div>
+<div class="chat-wall" id="chatMessages"><div class="day-divider">Today</div></div>
+<div class="tap-hint" id="tapHint" style="display:none">Tekan kirim saat giliran Haikal</div>
+<form class="chat-composer" id="messageForm">
+<button class="composer-plus" type="button" id="attachBtn">＋</button>
+<input class="composer-input" id="messageInput" placeholder="Message" autocomplete="off" inputmode="none">
+<button class="send-button" type="submit">➤</button>
+</form>
+<div class="iphone-keyboard" id="iphoneKeyboard">
+<div class="keyboard-suggestions"><span>😊</span><span id="suggestionText">Haikal</span><span>❤️</span></div>
+<div class="keyboard-row">
+<button type="button" class="keyboard-key" data-key="q">q</button><button type="button" class="keyboard-key" data-key="w">w</button><button type="button" class="keyboard-key" data-key="e">e</button><button type="button" class="keyboard-key" data-key="r">r</button><button type="button" class="keyboard-key" data-key="t">t</button><button type="button" class="keyboard-key" data-key="y">y</button><button type="button" class="keyboard-key" data-key="u">u</button><button type="button" class="keyboard-key" data-key="i">i</button><button type="button" class="keyboard-key" data-key="o">o</button><button type="button" class="keyboard-key" data-key="p">p</button>
+</div>
+<div class="keyboard-row row-two">
+<button type="button" class="keyboard-key" data-key="a">a</button><button type="button" class="keyboard-key" data-key="s">s</button><button type="button" class="keyboard-key" data-key="d">d</button><button type="button" class="keyboard-key" data-key="f">f</button><button type="button" class="keyboard-key" data-key="g">g</button><button type="button" class="keyboard-key" data-key="h">h</button><button type="button" class="keyboard-key" data-key="j">j</button><button type="button" class="keyboard-key" data-key="k">k</button><button type="button" class="keyboard-key" data-key="l">l</button>
+</div>
+<div class="keyboard-row">
+<button type="button" class="keyboard-key special" data-action="shift">⬆</button><button type="button" class="keyboard-key" data-key="z">z</button><button type="button" class="keyboard-key" data-key="x">x</button><button type="button" class="keyboard-key" data-key="c">c</button><button type="button" class="keyboard-key" data-key="v">v</button><button type="button" class="keyboard-key" data-key="b">b</button><button type="button" class="keyboard-key" data-key="n">n</button><button type="button" class="keyboard-key" data-key="m">m</button><button type="button" class="keyboard-key special" data-action="backspace">⌫</button>
+</div>
+<div class="keyboard-bottom">
+<button type="button" class="keyboard-key special" data-action="numbers">123</button><button type="button" class="keyboard-key" data-key="😊">😊</button><button type="button" class="keyboard-key space-key" data-action="space">space</button><button type="button" class="keyboard-key special" data-action="period">.</button><button type="button" class="keyboard-key return-key" data-action="return">kirim</button>
+</div><div class="keyboard-home-line"></div>
+</div>
+</section>
+
+<button class="home-indicator" id="homeIndicator" aria-label="Kembali ke layar utama"></button>
+</div></div></div>
+
+<script>
+const CORRECT_PIN = "2006";
+
+const contacts = [
+{id:1,name:"naaa",avatar:"images/gambar1.jpg",time:"now",preview:"kamu dmna sih",favorite:true,unread:true,group:false,messages:[],script:[
+{from:"in",text:"kamu dmna sih"},
+{from:"out",text:"lagi nongkrong sama anak anak"},
+{from:"in",text:"kamu ga bohong kan?"},
+{from:"in",text:"mana coba pap"},
+{from:"out",text:"[PHOTO]",photo:"images/gambar1.jpg",caption:"nih, lagi nongkrong"},
+{from:"out",text:"ga percayaan banget kamu curiga terus sama aku"},
+{from:"in",text:"kamu sibuk terus dari kemarin"},
+{from:"out",text:"aku? bukannya kamu?"},
+{from:"in",text:"kall...."},
+{from:"in",text:"udah aku ga mau ribut"},
+{from:"out",text:"yauda oke"},
+{from:"system",text:"Aluna membaca pesan terakhir."}
+]},
+{id:2,name:"berandalan bandung",avatar:"https://i.pravatar.cc/100?img=13",time:"now",preview:"Rendra: cewe tadi geulis euyy",favorite:false,unread:true,group:true,messages:[],script:[
+{from:"in",sender:"Rendra",text:"@haikal cewe tadi geulis euyy"},
+{from:"in",sender:"Jevan",text:"iya lagi, awas nnti aluna marah wkwwk"},
+{from:"in",sender:"Jarel",text:"kalo diam diam mah ga bakal ketauan"},
+{from:"in",sender:"Cevan",text:"parah jing ajarin selingkuh"},
+{from:"in",sender:"Rendra",text:"lagian aluna sibuk mulu kasian bro kita kesepian"},
+{from:"in",sender:"Mark",text:"stop jadi bajingan"},
+{from:"in",sender:"Mark",text:"kalo ga suka sama aluna lagi mending mutusin daripada selingkuh"},
+{from:"in",sender:"Cevan",text:"siap salah bang"},
+{from:"in",sender:"Jevan",text:"tuh gara gara rendra tuh ajaran sesat"},
+{from:"in",sender:"Rendra",text:"lah gue lagi sat"},
+{from:"out",text:"gue juga capek sama aluna"},
+{from:"in",sender:"Rendra",text:"kan...."},
+{from:"out",text:"apa gue putus aja"},
+{from:"in",sender:"Mark",text:"kalo cewe lo ga macem-macem gapain putus, alasan lo aja mau ke cewe lain"},
+{from:"in",sender:"Jarel",text:"BHHAAPPPPPP"}
+]},
+{id:3,name:"ibuku",avatar:"https://i.pravatar.cc/100?img=47",time:"Yesterday",preview:"aa udah malem",favorite:true,unread:false,group:false,messages:[
+{from:"in",sender:"Ibu",text:"aa udah malem"},
+{from:"in",sender:"Ibu",text:"jangan pulang malem-malem terus"},
+{from:"out",text:"iya buu"},
+{from:"system",text:"Haikal tetap pulang sekitar jam 1 malam."}
+],script:[]},
+{id:4,name:"arkan",avatar:"https://i.pravatar.cc/100?img=12",time:"Yesterday",preview:"ibu suruh pulang",favorite:false,unread:false,group:false,messages:[
+{from:"in",sender:"Arkan",text:"woii ibu suruh pulang"},
+{from:"in",sender:"Arkan",text:"cepat pulang atau gue sita motor lo"},
+{from:"out",text:"yoi"}
+],script:[]},
+{id:5,name:"mikatot",avatar:"https://i.pravatar.cc/100?img=14",time:"Today",preview:"sial, gara-gara asdos sadis itu",favorite:false,unread:false,group:false,messages:[{from:"in",text:"sial, gara-gara asdos sadis itu gua harus revisi lagi"}],script:[]},
+{id:6,name:"popi 🪴",avatar:"https://i.pravatar.cc/100?img=47",time:"Yesterday",preview:"iyaa aa popiiii",favorite:false,unread:false,group:false,messages:[{from:"in",text:"iyaa aa popiiii"}],script:[]},
+{id:7,name:"rikotok",avatar:"https://i.pravatar.cc/100?img=15",time:"Yesterday",preview:"dah berapa lama lu sama dia?",favorite:false,unread:false,group:false,messages:[{from:"in",text:"dah berapa lama lu sama dia tuh?"}],script:[]},
+{id:8,name:"javyy",avatar:"https://i.pravatar.cc/100?img=44",time:"Yesterday",preview:"apaa sih emangnya jav?",favorite:false,unread:false,group:false,messages:[{from:"in",text:"apaa sih emangnya jav? lu gejelas bngt sumpah"}],script:[]}
+];
+
+const views = {
+lock:document.getElementById("lockView"),
+pin:document.getElementById("pinView"),
+home:document.getElementById("homeView"),
+wa:document.getElementById("waView"),
+chat:document.getElementById("chatView")
+};
+
+let currentPin = "";
+let currentContact = null;
+let activeFilter = "All";
+let searchTerm = "";
+let keyboardShift = false;
+let keyboardNumbers = false;
+let scriptIndex = {};
+let chatTimers = {};
+let typingTimers = {};
+let typingSession = 0;
+let pendingChatId = null;
+let startedChats = {};
+
+const chatView = document.getElementById("chatView");
+const keyboard = document.getElementById("iphoneKeyboard");
+const messageInput = document.getElementById("messageInput");
+const chatMessages = document.getElementById("chatMessages");
+
+function showView(name) {
+  hideKeyboard();
+  Object.values(views).forEach(v => v.classList.remove("active"));
+  views[name].classList.add("active");
+  document.querySelector(".wallpaper").style.display =
+    ["lock","home"].includes(name) ? "block" : "none";
+  document.querySelector(".dynamic-island").style.display =
+    ["lock","home","pin"].includes(name) ? "block" : "none";
+  document.querySelector(".status").style.display =
+    ["lock","home","pin"].includes(name) ? "flex" : "none";
+  document.getElementById("homeIndicator").classList.toggle(
+    "dark", name === "wa" || name === "chat"
+  );
+  if (name === "home") updateClock();
+  if (name === "lock") updateLockNotifications();
+}
+
+function updateClock() {
+  const now = new Date();
+  const time = now.toLocaleTimeString("id-ID", {
+    hour:"2-digit",minute:"2-digit",hour12:false
+  }).replace(/\./g,":");
+  document.getElementById("clockText").textContent = time;
+  document.getElementById("statusTime").textContent = time;
+  document.getElementById("dateText").textContent =
+    now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  document.getElementById("widgetDay").textContent =
+    now.toLocaleDateString("en-US",{weekday:"long"});
+  document.getElementById("widgetDate").textContent = now.getDate();
+}
+updateClock();
+setInterval(updateClock,1000);
+
+function updateDots() {
+  document.querySelectorAll(".pin-dot").forEach((dot,i) =>
+    dot.classList.toggle("filled",i < currentPin.length)
+  );
+}
+
+function addDigit(d) {
+  if (currentPin.length >= 4) return;
+  currentPin += d;
+  updateDots();
+
+  if (currentPin.length === 4) {
+    if (currentPin === CORRECT_PIN) {
+      document.getElementById("pinError").textContent = "";
+      currentPin = "";
+      updateDots();
+      showView("home");
+      if (pendingChatId !== null) {
+        const id = pendingChatId;
+        pendingChatId = null;
+        openChat(id);
+      }
+    } else {
+      document.getElementById("pinError").textContent = "Incorrect Passcode. Try again.";
+      setTimeout(() => {
+        currentPin = "";
+        updateDots();
+        document.getElementById("pinError").textContent = "";
+      },700);
+    }
+  }
+}
+
+document.querySelectorAll("[data-digit]").forEach(b =>
+  b.addEventListener("click",() => addDigit(b.dataset.digit))
+);
+document.getElementById("deletePin").addEventListener("click",() => {
+  currentPin = currentPin.slice(0,-1);
+  updateDots();
+});
+document.getElementById("lockTap").addEventListener("click",() => showView("pin"));
+document.getElementById("flashBtn").addEventListener("click",e => {
+  e.stopPropagation();
+  e.currentTarget.style.background = "#ffffff8c";
+});
+document.getElementById("cameraBtn").addEventListener("click",e => {
+  e.stopPropagation();
+  alert("Camera — fitur dekorasi AU.");
+});
+document.getElementById("emergencyBtn").addEventListener("click",() => alert("Emergency"));
+
+document.querySelectorAll("[data-app]").forEach(button => {
+  button.addEventListener("click",() => {
+    const app = button.dataset.app;
+    if (app === "WhatsApp") {
+      renderContacts();
+      showView("wa");
+    } else if (["Camera","X","Instagram"].includes(app)) {
+      alert(app + " — fitur dekorasi AU.");
+    } else {
+      alert(app + " — aplikasi simulasi Interactive AU.");
+    }
+  });
+});
+
+document.getElementById("searchBtn").addEventListener("click",() => {
+  const term = prompt("Search apps");
+  if (!term) return;
+  const found = [...document.querySelectorAll(".app")].find(el =>
+    el.dataset.app?.toLowerCase() === term.toLowerCase()
+  );
+  if (found) found.click();
+  else alert("App tidak ditemukan.");
+});
+
+function renderContacts() {
+  const list = document.getElementById("contactList");
+  list.innerHTML = "";
+
+  const filtered = contacts.filter(c => {
+    const matches = (c.name + " " + c.preview).toLowerCase().includes(searchTerm);
+    const matchesFilter =
+      activeFilter === "All" ||
+      (activeFilter === "Unread" && c.unread) ||
+      (activeFilter === "Favorites" && c.favorite) ||
+      (activeFilter === "Groups" && c.group);
+    return matches && matchesFilter;
+  });
+
+  filtered.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "contact";
+    const img = document.createElement("img");
+    img.className = "avatar";
+    img.src = c.avatar;
+    img.alt = "";
+
+    const main = document.createElement("div");
+    main.className = "contact-main";
+    const line = document.createElement("div");
+    line.className = "contact-line";
+    const name = document.createElement("span");
+    name.className = "contact-name";
+    name.textContent = c.name;
+    const time = document.createElement("span");
+    time.className = "contact-time";
+    time.textContent = c.time;
+
+    const preview = document.createElement("div");
+    preview.className = "contact-preview";
+    preview.textContent = c.preview || "Ketuk untuk membuka chat";
+
+    line.append(name,time);
+    if (c.unread) {
+      const badge = document.createElement("span");
+      badge.textContent = "●";
+      badge.style.cssText = "color:#0cab72;font-size:10px";
+      line.append(badge);
+    }
+    main.append(line,preview);
+    b.append(img,main);
+    b.addEventListener("click",() => openChat(c.id));
+    list.append(b);
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<p style="padding:25px;text-align:center;color:#888;font-size:12px">No chats found</p>';
+  }
+  updateBadge();
+}
+
+document.getElementById("searchContacts").addEventListener("input",e => {
+  searchTerm = e.target.value.toLowerCase();
+  renderContacts();
+});
+
+document.querySelectorAll("[data-filter]").forEach(b => {
+  b.addEventListener("click",() => {
+    activeFilter = b.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach(x =>
+      x.classList.toggle("active",x === b)
+    );
+    renderContacts();
+  });
+});
+
+document.getElementById("newChat").addEventListener("click",() => {
+  const name = prompt("Nama kontak baru:");
+  if (!name || !name.trim()) return;
+  contacts.unshift({
+    id:Date.now(),name:name.trim(),avatar:"https://i.pravatar.cc/100?img=33",
+    time:"now",preview:"",favorite:false,unread:false,group:false,messages:[],script:[]
+  });
+  activeFilter = "All";
+  searchTerm = "";
+  document.getElementById("searchContacts").value = "";
+  renderContacts();
+});
+
+document.getElementById("waMenu").addEventListener("click",() =>
+  alert("WhatsApp Settings — fitur dekorasi AU.")
+);
+document.getElementById("waCamera").addEventListener("click",() =>
+  alert("Camera — fitur dekorasi AU.")
+);
+
+function openChat(id) {
+  currentContact = contacts.find(c => c.id === id);
+  if (!currentContact) return;
+  typingSession++;
+
+  currentContact.unread = false;
+  document.getElementById("chatAvatar").src = currentContact.avatar;
+  document.getElementById("chatName").textContent = currentContact.name;
+  document.getElementById("chatStatus").textContent =
+    currentContact.group ? "7 participants" : "online";
+
+  renderMessages();
+  showView("chat");
+  renderContacts();
+  updateLockNotifications();
+
+  const index = scriptIndex[id] || 0;
+  const script = currentContact.script || [];
+
+  if (script.length && index < script.length) {
+    if (script[index].from === "out") {
+      showHaikalTurn();
+    } else if (!startedChats[id]) {
+      startedChats[id] = true;
+      scheduleIncoming(currentContact,650);
+    }
+  }
+}
+
+function renderMessages() {
+  chatMessages.innerHTML = '<div class="day-divider">Today</div>';
+  if (!currentContact) return;
+  currentContact.messages.forEach(m => appendBubble(m,false));
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function appendBubble(m,scroll=true) {
+  const bubble = document.createElement("div");
+
+  if (m.from === "system") {
+    bubble.className = "day-divider";
+    bubble.textContent = m.text;
+    chatMessages.append(bubble);
+  } else {
+    bubble.className = "message " + (m.from === "out" ? "outgoing" : "incoming");
+
+    if (m.sender) {
+      const sender = document.createElement("div");
+      sender.style.cssText = "font-size:10px;font-weight:700;color:#1685b4;margin-bottom:4px";
+      sender.textContent = m.sender;
+      bubble.append(sender);
+    }
+
+    if (m.photo) {
+      const img = document.createElement("img");
+      img.className = "message-photo";
+      img.src = m.photo;
+      img.alt = "Foto nongkrong Haikal";
+      bubble.append(img);
+    }
+
+    if (m.text && m.text !== "[PHOTO]") {
+      const text = document.createElement("div");
+      text.textContent = m.text;
+      bubble.append(text);
+    }
+
+    if (m.caption) {
+      const cap = document.createElement("div");
+      cap.textContent = m.caption;
+      bubble.append(cap);
+    }
+
+    const time = document.createElement("div");
+    time.className = "message-time";
+    time.textContent = m.time || getChatTime();
+    bubble.append(time);
+    chatMessages.append(bubble);
+  }
+
+  if (scroll) chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function getChatTime() {
+  return new Date().toLocaleTimeString("id-ID",{
+    hour:"2-digit",minute:"2-digit",hour12:false
+  }).replace(/\./g,":");
+}
+
+function addMessage(contact,message) {
+  contact.messages.push(message);
+  contact.preview = message.text === "[PHOTO]"
+    ? "📷 Foto"
+    : (message.text || message.caption || "Pesan");
+  contact.time = "now";
+
+  if (currentContact?.id === contact.id && views.chat.classList.contains("active")) {
+    appendBubble(message,true);
+    contact.unread = false;
+  } else if (message.from === "in") {
+    contact.unread = true;
+  }
+
+  renderContacts();
+  updateLockNotifications();
+  updateBadge();
+}
+
+function showTyping(contact) {
+  if (currentContact?.id !== contact.id || !views.chat.classList.contains("active")) return;
+  removeTyping();
+  const el = document.createElement("div");
+  el.id = "typingIndicator";
+  el.className = "typing-indicator";
+  el.textContent = contact.group ? "seseorang sedang mengetik..." : contact.name + " sedang mengetik...";
+  chatMessages.append(el);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  document.getElementById("chatStatus").textContent = "typing...";
+}
+
+function removeTyping() {
+  document.getElementById("typingIndicator")?.remove();
+  if (currentContact) {
+    document.getElementById("chatStatus").textContent =
+      currentContact.group ? "7 participants" : "online";
+  }
+}
+
+function scheduleIncoming(contact,delay=1000) {
+  const id = contact.id;
+  const script = contact.script || [];
+  const index = scriptIndex[id] || 0;
+  const message = script[index];
+
+  if (!message) {
+    if (currentContact?.id === id) {
+      document.getElementById("tapHint").style.display = "none";
+      hideKeyboard();
+      document.getElementById("chatStatus").textContent = "last seen recently";
+    }
+    return;
+  }
+
+  if (message.from === "out") {
+    if (currentContact?.id === id && views.chat.classList.contains("active")) {
+      showHaikalTurn();
+    }
+    return;
+  }
+
+  if (currentContact?.id === id && views.chat.classList.contains("active")) {
+    showTyping(contact);
+  }
+
+  clearTimeout(chatTimers[id]);
+  chatTimers[id] = setTimeout(() => {
+    removeTypingForContact(id);
+    addMessage(contact,message);
+    scriptIndex[id] = index + 1;
+
+    // Pesan masuk selanjutnya otomatis, tanpa perlu mengetuk layar.
+    chatTimers[id] = setTimeout(() => {
+      scheduleIncoming(contact,350 + Math.random()*550);
+    },350);
+  },delay + Math.random()*500);
+}
+
+function removeTypingForContact(id) {
+  if (currentContact?.id === id) removeTyping();
+}
+
+function showHaikalTurn() {
+  if (!currentContact) return;
+  const id = currentContact.id;
+  const message = currentContact.script[scriptIndex[id] || 0];
+  if (!message || message.from !== "out") return;
+
+  document.getElementById("tapHint").textContent = "Giliran Haikal — tekan kirim ↓";
+  document.getElementById("tapHint").style.display = "block";
+  document.getElementById("suggestionText").textContent = "Haikal";
+  showKeyboard();
+}
+
+function sendHaikalScriptMessage() {
+  if (!currentContact) return;
+
+  const contact = currentContact;
+  const id = contact.id;
+  const index = scriptIndex[id] || 0;
+  const message = (contact.script || [])[index];
+
+  // Tombol kirim hanya berfungsi saat giliran Haikal.
+  if (!message || message.from !== "out") return;
+
+  hideKeyboard();
+  removeTyping();
+  document.getElementById("tapHint").style.display = "none";
+
+  if (message.text === "[PHOTO]") {
+    showTyping(contact);
+    setTimeout(() => {
+      if (currentContact?.id !== id) {
+        addMessage(contact,message);
+      } else {
+        removeTyping();
+        addMessage(contact,message);
+      }
+      scriptIndex[id] = index + 1;
+      scheduleIncoming(contact,600);
+    },850);
+    return;
+  }
+
+  showTyping(contact);
+  const text = message.text || "";
+  let position = 0;
+  messageInput.value = "";
+  const session = typingSession;
+
+  function typeCharacter() {
+    if (session !== typingSession || currentContact?.id !== id) return;
+
+    position++;
+    messageInput.value = text.slice(0,position);
+
+    if (position < text.length) {
+      typingTimers[id] = setTimeout(typeCharacter,25 + Math.random()*30);
+    } else {
+      typingTimers[id] = setTimeout(() => {
+        if (session !== typingSession || currentContact?.id !== id) return;
+        removeTyping();
+        messageInput.value = "";
+        addMessage(contact,message);
+        scriptIndex[id] = index + 1;
+        scheduleIncoming(contact,600);
+      },250);
+    }
+  }
+
+  typeCharacter();
+}
+
+function keyboardIsOpen() {
+  return chatView.classList.contains("keyboard-open");
+}
+
+function showKeyboard() {
+  keyboard.classList.add("visible");
+  chatView.classList.add("keyboard-open");
+  document.getElementById("homeIndicator").style.display = "none";
+}
+
+function hideKeyboard() {
+  keyboard.classList.remove("visible");
+  chatView.classList.remove("keyboard-open");
+  document.getElementById("homeIndicator").style.display = "";
+}
+
+function renderKeyboardLetters() {
+  document.querySelectorAll("[data-key]").forEach(b => {
+    const k = b.dataset.key;
+    if (/^[a-z]$/i.test(k)) b.textContent = keyboardShift ? k.toUpperCase() : k.toLowerCase();
+  });
+}
+
+function insertAtCursor(value) {
+  const start = messageInput.selectionStart ?? messageInput.value.length;
+  const end = messageInput.selectionEnd ?? messageInput.value.length;
+  messageInput.value = messageInput.value.slice(0,start) + value + messageInput.value.slice(end);
+  messageInput.setSelectionRange(start+value.length,start+value.length);
+}
+
+messageInput.addEventListener("focus",showKeyboard);
+
+document.querySelectorAll(".keyboard-key").forEach(button => {
+  button.addEventListener("mousedown",e => e.preventDefault());
+  button.addEventListener("click",() => {
+    const key = button.dataset.key;
+    const action = button.dataset.action;
+
+    if (action === "return") {
+      sendHaikalScriptMessage();
+      return;
+    }
+
+    if (key) {
+      insertAtCursor(key === "😊" ? "😊" : (keyboardShift && /^[a-z]$/i.test(key) ? key.toUpperCase() : key));
+      if (keyboardShift && /^[a-z]$/i.test(key)) {
+        keyboardShift = false;
+        renderKeyboardLetters();
+      }
+      return;
+    }
+
+    if (action === "space") insertAtCursor(" ");
+    if (action === "period") insertAtCursor(".");
+    if (action === "backspace") {
+      const s = messageInput.selectionStart ?? messageInput.value.length;
+      const e = messageInput.selectionEnd ?? messageInput.value.length;
+      if (s === e && s > 0) {
+        messageInput.value = messageInput.value.slice(0,s-1) + messageInput.value.slice(e);
+        messageInput.setSelectionRange(s-1,s-1);
+      } else {
+        messageInput.value = messageInput.value.slice(0,s) + messageInput.value.slice(e);
+        messageInput.setSelectionRange(s,s);
+      }
+    }
+    if (action === "shift") {
+      keyboardShift = !keyboardShift;
+      renderKeyboardLetters();
+    }
+    if (action === "numbers") {
+      keyboardNumbers = !keyboardNumbers;
+      const nums = {q:"1",w:"2",e:"3",r:"4",t:"5",y:"6",u:"7",i:"8",o:"9",p:"0"};
+      document.querySelectorAll("[data-key]").forEach(b => {
+        const k = b.dataset.key;
+        if (/^[a-z]$/i.test(k)) {
+          b.textContent = keyboardNumbers ? (nums[k] || k) : (keyboardShift ? k.toUpperCase() : k);
+        }
+      });
+    }
+  });
+});
+
+document.getElementById("messageForm").addEventListener("submit",e => {
+  e.preventDefault();
+  sendHaikalScriptMessage();
+});
+
+document.getElementById("tapHint").addEventListener("click",() => {
+  sendHaikalScriptMessage();
+});
+
+document.getElementById("chatMessages").addEventListener("click",() => {
+  // Pesan masuk otomatis; area chat tidak perlu diketuk untuk lanjut.
+});
+
+document.getElementById("backToChats").addEventListener("click",() => {
+  hideKeyboard();
+  removeTyping();
+  currentContact = null;
+  renderContacts();
+  showView("wa");
+});
+
+document.getElementById("callBtn").addEventListener("click",() => alert("Panggilan simulasi AU."));
+document.getElementById("attachBtn").addEventListener("click",() => alert("Lampiran — fitur dekorasi AU."));
+
+function updateBadge() {
+  const unread = contacts.filter(c => c.unread).length;
+  const badge = document.getElementById("waBadge");
+  badge.textContent = unread;
+  badge.style.display = unread ? "grid" : "none";
+}
+
+function updateLockNotifications() {
+  const list = document.getElementById("lockNotifications");
+  list.innerHTML = "";
+  const recent = contacts.filter(c => c.unread).slice(0,3);
+
+  recent.forEach(c => {
+    const n = document.createElement("div");
+    n.className = "notification";
+
+    const img = document.createElement("img");
+    img.className = "notif-avatar";
+    img.src = c.avatar;
+    img.alt = "";
+
+    const body = document.createElement("div");
+    body.className = "notif-text";
+    const title = document.createElement("div");
+    title.className = "notif-title";
+    title.textContent = c.name;
+    const msg = document.createElement("div");
+    msg.className = "notif-message";
+    msg.textContent = c.preview || "Pesan baru";
+
+    const time = document.createElement("div");
+    time.className = "notif-time";
+    time.textContent = "now";
+
+    body.append(title,msg);
+    n.append(img,body,time);
+    n.addEventListener("click",e => {
+      e.stopPropagation();
+      pendingChatId = c.id;
+      showView("pin");
+    });
+    list.append(n);
+  });
+}
+
+document.getElementById("homeIndicator").addEventListener("click",() => {
+  if (views.wa.classList.contains("active") || views.chat.classList.contains("active")) {
+    hideKeyboard();
+    removeTyping();
+    currentContact = null;
+    showView("home");
+  } else if (views.pin.classList.contains("active")) {
+    showView("lock");
+  }
+});
+
+showView("lock");
+const phoneScreen = document.querySelector(".screen");
+const homeBar = document.getElementById("homeIndicator");
+let startX = 0,startY = 0,fromBottom = false;
+
+phoneScreen.addEventListener("touchstart",e => {
+  const t = e.changedTouches[0];
+  const r = phoneScreen.getBoundingClientRect();
+  startX = t.clientX;
+  startY = t.clientY;
+  fromBottom = (r.bottom-t.clientY)<115 || e.target === homeBar;
+},{passive:true});
+
+phoneScreen.addEventListener("touchend",e => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX-startX;
+  const dy = t.clientY-startY;
+  if (Math.abs(dy)<45 || Math.abs(dy)<Math.abs(dx)*1.15) return;
+
+  if (views.lock.classList.contains("active") && dy<0) showView("pin");
+  else if (views.pin.classList.contains("active") && dy>0) showView("lock");
+  else if ((views.wa.classList.contains("active") || views.chat.classList.contains("active")) && dy<0 && fromBottom) {
+    hideKeyboard();
+    currentContact = null;
+    showView("home");
+  }
+},{passive:true});
+
+let mouseDown = false,mouseX = 0,mouseY = 0,mouseBottom = false;
+
+phoneScreen.addEventListener("pointerdown",e => {
+  if (e.pointerType === "touch") return;
+  const r = phoneScreen.getBoundingClientRect();
+  mouseDown = true;
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  mouseBottom = (r.bottom-e.clientY)<115 || e.target === homeBar;
+});
+
+phoneScreen.addEventListener("pointerup",e => {
+  if (!mouseDown || e.pointerType === "touch") return;
+  mouseDown = false;
+  const dx = e.clientX-mouseX;
+  const dy = e.clientY-mouseY;
+  if (Math.abs(dy)<45 || Math.abs(dy)<Math.abs(dx)*1.15) return;
+
+  if (views.lock.classList.contains("active") && dy<0) showView("pin");
+  else if (views.pin.classList.contains("active") && dy>0) showView("lock");
+  else if ((views.wa.classList.contains("active") || views.chat.classList.contains("active")) && dy<0 && mouseBottom) {
+    hideKeyboard();
+    currentContact = null;
+    showView("home");
+  }
+});
+
+renderContacts();
+updateLockNotifications();
+updateBadge();
+</script>
+</body>
+</html>
